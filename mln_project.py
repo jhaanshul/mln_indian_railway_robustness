@@ -188,7 +188,7 @@ total_loss_
 def get_edge_loss(edge, cur_set, train_details_map, edge_to_train_map):
   loss = 0
   for train in edge_to_train_map[edge]:
-    if train not in cur_set:
+    if(train not in cur_set):
       try:
         loss += train_details_map[train]
       except:
@@ -217,13 +217,130 @@ def maximize_influence(G, k , train_details_map, edge_to_train_map):
       x = 0
   return result
 
-result = maximize_influence(G, G.number_of_edges(), train_details_map, edge_to_train_map)
+result = maximize_influence(G.copy(), 1000, train_details_map, edge_to_train_map)
 
-#plt.scatter(range(len(result)),result, color='green')
-plt.plot(range(1000),result[0:1000], color='green')
-#plt.ylim(total_loss_)
-plt.xlabel('Edges')
-plt.ylabel('Loss')
-plt.title('Robustness')
-plt.show()
+percentage = 75
+
+def get_x_value(percentage, max_value, result_list):
+    percent_value = (percentage/100) * max_value
+    index = next(x[0] for x in enumerate(result_list) if x[1] >= percent_value)
+    return index+1, percent_value
+
+x_value, y_value = get_x_value(percentage, total_loss_, result)
+
+def plot(result, percentage, total_loss_):
+  x_value, y_value = get_x_value(percentage, total_loss_, result)
+  plt.plot(range(len(result)),result, color='green')
+  plt.axvline(x=x_value, color='r', linestyle='--')
+  plt.axhline(y=y_value, color='r', linestyle='--')
+  x_pos = 0.3*len(result)
+  y_pos = 0.3*len(result)
+
+  plt.text(x_pos, y_pos, str(percentage)+"% damage on removal of "+str(x_value)+" edges")
+
+  plt.xlabel('Edges')
+  plt.ylabel('Loss')
+  plt.title('Robustness')
+  plt.show()
+
+plot(result, 75, total_loss_)
+
+def maximize_influence_based_on_central_nodes(G, nodes):
+  cur_set = set()
+  total_loss = 0
+  result = []
+  for node in nodes:
+    edges = list(G.edges(node))
+    for edge in edges:
+      edge_loss = get_edge_loss(edge, cur_set, train_details_map, edge_to_train_map)
+      total_loss += edge_loss
+      result.append(total_loss)
+      try:
+        cur_set.update(set(edge_to_train_map[edge])) #add to the set, the list of train destroyed through 
+        G.remove_edge(edge[0], edge[1])
+      except:
+        x = 0
+  return result
+
+top_forty_stations = ['MGS','BZA','BPQ','BSL','HBJ','CNB','JHS','NDLS','VZM','SC','STA','NGP','HWH','NJP','PPTA','BBS','ADI','KOTA','BSR','PUNE','KYN','BSP','MAS','SA','NBQ','SUR','BRC','BJU','GTL','LKO','MLDT','BSB','TATA','RN','ALD','KIR','PNVL','GHY','DEE','MAO']
+
+top_sixty_stations = ['BSL', 'MGS', 'BPQ', 'SC', 'HBJ', 'BZA', 'NDLS', 'STA', 'VZM', 'ALD', 'GTL', 'BBS', 'PPTA', 'DEE', 'CAR', 'CSN', 'ARW', 'HWH', 'IGP', 'NJP', 'BJU', 'BSB', 'WR', 'LTT', 'MAS', 'BPRD', 'SA', 'ADI', 'KGP', 'BTI', 'SLO', 'RU', 'JU', 'ADRA', 'DLI', 'KCG', 'TATA', 'BSR', 'RN', 'JHS', 'NZM', 'ASR', 'BJF', 'ABR', 'NBQ', 'LNL', 'GMO', 'JSME', 'BTE', 'KIR', 'GHY', 'HMH', 'LDH', 'BKN', 'BGS', 'NGP', 'MDU', 'FL', 'YPR', 'SOG']
+
+top_hundred_stations = ['BSL', 'MGS', 'BPQ', 'SC', 'HBJ', 'BZA', 'NDLS', 'STA', 'VZM', 'ALD', 'GTL', 'BBS', 'PPTA', 'DEE', 'CAR', 'CSN', 'ARW', 'HWH', 'IGP', 'NJP', 'BJU', 'BSB', 'WR', 'LTT', 'MAS', 'BPRD', 'SA', 'ADI', 'KGP', 'BTI', 'SLO', 'RU', 'JU', 'ADRA', 'DLI', 'KCG', 'TATA', 'BSR', 'RN', 'JHS', 'NZM', 'ASR', 'BJF', 'ABR', 'NBQ', 'LNL', 'GMO', 'JSME', 'BTE', 'KIR', 'GHY', 'HMH', 'LDH', 'BKN', 'BGS', 'NGP', 'MDU', 'FL', 'YPR', 'SOG', 'PERN', 'ATT', 'MAO', 'BSP', 'GWL', 'KPD', 'DSJ', 'PUNE', 'MMR', 'NYP', 'LKA', 'CSMT', 'MB', 'PNVL', 'TNA', 'LKG', 'LMG', 'DEC', 'SUR', 'BLS', 'MAJN', 'KIUL', 'MS', 'KOTA', 'MDB', 'AGC', 'BQA', 'ROK', 'KRNT', 'JPH', 'R', 'SWM', 'KQR', 'PNP', 'CTC', 'CNB', 'VPT', 'TMQ', 'MMY', 'GKP']
+
+res_40 = maximize_influence_based_on_central_nodes(G.copy(), top_forty_stations)
+
+res_60 = maximize_influence_based_on_central_nodes(G.copy(), top_sixty_stations)
+
+res_100 = maximize_influence_based_on_central_nodes(G.copy(), top_hundred_stations)
+
+
+
+"""plot for 40 top nodes"""
+
+plot(res_40, 75, total_loss_)
+
+"""plot for top 60 nodes"""
+
+plot(res_60, 75, total_loss_)
+
+"""plot for top 100 nodes"""
+
+plot(res_100, 75, total_loss_)
+
+def maximize_influence_based_on_central_nodes_greedy(G,nodes):
+  edge_set = set()
+  for node in nodes:
+    edge_set.update(set(G.edges(node)))
+
+  cur_set = set()
+  total_loss = 0
+  result = []
+  
+  for edge in edge_set:
+      edge_loss = get_edge_loss(edge, cur_set, train_details_map, edge_to_train_map)
+      total_loss += edge_loss
+      result.append(total_loss)
+      try:
+        cur_set.update(set(edge_to_train_map[edge])) #add to the set, the list of train destroyed through 
+        G.remove_edge(edge[0], edge[1])
+      except:
+        x = 0
+    
+  return result
+
+res_central_nodes_greedy = maximize_influence_based_on_central_nodes_greedy(G.copy(), top_hundred_stations)
+
+plot(res_central_nodes_greedy, 75, total_loss_)
+
+bc = nx.betweenness_centrality(g_copy)
+sorted_bc = dict(sorted(bc.items(), key=lambda item: item[1], reverse=True))
+
+k_nodes = 60
+top_K_stations = list(sorted_bc.keys())[0:k_nodes]
+
+bc_edges = nx.edge_betweenness_centrality(graph_copy,  weight="weight")
+sorted_bc_edges = dict(sorted(bc_edges.items(), key=lambda item: item[1], reverse=True))
+
+k_edges = 20000
+top_K_links = list(sorted_bc_edges.keys())[0:k_edges]
+
+def maximize_influence_based_on_central_links(G,edges):
+  cur_set = set()
+  total_loss = 0
+  result = []
+  
+  for edge in edges:
+      edge_loss = get_edge_loss(edge, cur_set, train_details_map, edge_to_train_map)
+      total_loss += edge_loss
+      result.append(total_loss)
+      try:
+        cur_set.update(set(edge_to_train_map[edge])) #add to the set, the list of train destroyed through 
+        G.remove_edge(edge[0], edge[1])
+      except:
+        x = 0
+    
+  return result
+
+result_bc_edges = maximize_influence_based_on_central_links(G.copy(), top_K_links )
 
